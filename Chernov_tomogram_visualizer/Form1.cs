@@ -11,6 +11,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
+using OpenTK.Graphics.OpenGL;
+
 namespace Chernov_tomogram_visualizer
 {
     public partial class Form1 : Form
@@ -19,6 +21,11 @@ namespace Chernov_tomogram_visualizer
         bool loaded = false;
         View view = new View();
         int currentLayer;
+        bool needReload = false;
+        int check_observer_1 = 0;
+        int check_observer_2 = 0;
+        int minValue = 0;
+        int widthValue = 255;
 
         int FrameCount;
         DateTime NextFPSUpdate = DateTime.Now.AddSeconds(1);
@@ -51,25 +58,52 @@ namespace Chernov_tomogram_visualizer
             {
                 string str = dialog.FileName;
                 bin.readBIN(str);
+                trackBar1.Maximum = Bin.Z - 1;
                 view.SetupView(glControl1.Width, glControl1.Height);
                 loaded = true;
-                trackBar1.Maximum = Bin.Z;
                 glControl1.Invalidate();
             }
         }
 
         private void glControl1_Paint(object sender, PaintEventArgs e)
         {
-            if (loaded)
+            if (checkBox1.Checked)
             {
-                view.DrawQuads(currentLayer);
-                glControl1.SwapBuffers();
+                if (loaded)
+                {
+                    view.DrawQuadsStrip(currentLayer, minValue, widthValue);
+                    glControl1.SwapBuffers();
+                }
+            }
+
+            else if (checkBox2.Checked)
+            {
+                if (loaded)
+                {
+                    if (needReload)
+                    {
+                        view.generateTextureImage(currentLayer, minValue, widthValue);
+                        view.Load2DTexture();
+                        needReload = false;
+                    }
+                    view.DrawQuadsStrip(currentLayer, minValue, widthValue);
+                    glControl1.SwapBuffers();
+                }
+            }
+            else
+            {
+                if (loaded)
+                {
+                    MessageBox.Show("Пожалуйста, выберите тип текстуры.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    loaded = false;
+                }
             }
         }
 
         private void trackBar1_Scroll(object sender, EventArgs e)
         {
             currentLayer = trackBar1.Value;
+            needReload = true;
         }
 
         void Application_Idle(object sender, EventArgs e)
@@ -78,6 +112,57 @@ namespace Chernov_tomogram_visualizer
             {
                 displayFPS();
                 glControl1.Invalidate();
+            }
+        }
+        private void checkBox1_CheckedChanged_1(object sender, EventArgs e)
+        {
+            if (checkBox1.Checked)
+            {
+                check_observer_2 = 0;
+                checkBox2.Checked = false;
+                check_observer_1 = 1;
+            }
+            else
+            {
+                if (check_observer_1 == 1)
+                {
+                    checkBox1.Checked = true;
+                }
+            }
+        }
+
+        private void checkBox2_CheckedChanged(object sender, EventArgs e)
+        {
+            if (checkBox2.Checked)
+            {
+                check_observer_1 = 0;
+                checkBox1.Checked = false;
+                check_observer_2 = 1;
+            }
+            else
+            {
+                if (check_observer_2 == 1)
+                {
+                    checkBox2.Checked = true;
+                }
+            }
+        }
+
+        private void trackBar2_Scroll(object sender, EventArgs e)
+        {
+            minValue = trackBar2.Value;
+            if (checkBox2.Checked)
+            {
+                needReload = true; 
+            }
+        }
+
+        private void trackBar3_Scroll(object sender, EventArgs e)
+        {
+            widthValue = trackBar3.Value;
+            if (checkBox2.Checked)
+            {
+                needReload = true;
             }
         }
     }
