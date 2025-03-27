@@ -86,7 +86,7 @@ namespace Chernov_tomogram_visualizer
                         view.Load2DTexture();
                         needReload = false;
                     }
-                    view.DrawQuadsStrip(currentLayer, minValue, widthValue);
+                    view.DrawTexture();
                     glControl1.SwapBuffers();
                 }
             }
